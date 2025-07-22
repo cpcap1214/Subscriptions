@@ -136,6 +136,31 @@ struct MinimalSubscriptionRowView: View {
         return calendar.dateComponents([.day], from: today, to: paymentDate).day ?? 0
     }
     
+    private var effectiveDaysUntilPayment: Int {
+        if daysUntilPayment < 0 {
+            // For overdue payments, calculate next payment cycle
+            let nextPayment = subscription.nextPaymentDateAfter(Date())
+            let calendar = Calendar.current
+            let today = calendar.startOfDay(for: Date())
+            let nextPaymentDate = calendar.startOfDay(for: nextPayment)
+            return calendar.dateComponents([.day], from: today, to: nextPaymentDate).day ?? 0
+        } else {
+            return daysUntilPayment
+        }
+    }
+    
+    private var paymentDateText: String {
+        let effectiveDays = effectiveDaysUntilPayment
+        
+        if effectiveDays == 0 {
+            return String(.today)
+        } else if effectiveDays == 1 {
+            return String(.tomorrow)
+        } else {
+            return "\(effectiveDays)d"
+        }
+    }
+    
     var body: some View {
         VStack(spacing: 0) {
             Button(action: {
@@ -163,9 +188,9 @@ struct MinimalSubscriptionRowView: View {
                                 .font(.system(size: 12))
                                 .foregroundColor(appColors.secondaryText)
                             
-                            Text(daysUntilPayment == 0 ? String(.today) : daysUntilPayment == 1 ? String(.tomorrow) : "\(daysUntilPayment)d")
+                            Text(paymentDateText)
                                 .font(.system(size: 12, weight: .medium))
-                                .foregroundColor(daysUntilPayment <= 3 ? appColors.destructive : appColors.secondaryText)
+                                .foregroundColor(effectiveDaysUntilPayment <= 3 ? appColors.destructive : appColors.secondaryText)
                         }
                     }
                     
@@ -201,7 +226,7 @@ struct MinimalSubscriptionRowView: View {
                     VStack(spacing: 12) {
                         HStack {
                             VStack(alignment: .leading, spacing: 4) {
-                                Text("開始日期")
+                                Text(.startDate)
                                     .font(.system(size: 12, weight: .medium))
                                     .foregroundColor(appColors.secondaryText)
                                 Text("\(subscription.nextPaymentDate, formatter: DateFormatter.shortDate)")
@@ -212,7 +237,7 @@ struct MinimalSubscriptionRowView: View {
                             Spacer()
                             
                             VStack(alignment: .trailing, spacing: 4) {
-                                Text("計費週期")
+                                Text(.billingCycleLabel)
                                     .font(.system(size: 12, weight: .medium))
                                     .foregroundColor(appColors.secondaryText)
                                 Text(subscription.billingCycle.displayName)
@@ -224,7 +249,7 @@ struct MinimalSubscriptionRowView: View {
                         if let description = subscription.description, !description.isEmpty {
                             HStack {
                                 VStack(alignment: .leading, spacing: 4) {
-                                    Text("描述")
+                                    Text(.description)
                                         .font(.system(size: 12, weight: .medium))
                                         .foregroundColor(appColors.secondaryText)
                                     Text(description)
@@ -238,7 +263,7 @@ struct MinimalSubscriptionRowView: View {
                         
                         HStack {
                             VStack(alignment: .leading, spacing: 4) {
-                                Text("月費換算")
+                                Text(.monthlyEquivalent)
                                     .font(.system(size: 12, weight: .medium))
                                     .foregroundColor(appColors.secondaryText)
                                 Text(dataManager.formattedCurrency(subscription.monthlyCost))
@@ -249,7 +274,7 @@ struct MinimalSubscriptionRowView: View {
                             Spacer()
                             
                             VStack(alignment: .trailing, spacing: 4) {
-                                Text("年費換算")
+                                Text(.yearlyEquivalent)
                                     .font(.system(size: 12, weight: .medium))
                                     .foregroundColor(appColors.secondaryText)
                                 Text(dataManager.formattedCurrency(subscription.monthlyCost * 12))

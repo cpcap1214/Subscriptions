@@ -42,11 +42,11 @@ struct EditSubscriptionView: View {
                 VStack(spacing: 32) {
                     // Header
                     VStack(spacing: 8) {
-                        Text("編輯訂閱")
+                        Text(.editSubscription)
                             .font(.system(size: 24, weight: .bold))
                             .foregroundColor(appColors.primaryText)
                         
-                        Text("更新您的服務資訊")
+                        Text(.updateServiceInfo)
                             .font(.system(size: 14, weight: .regular))
                             .foregroundColor(appColors.secondaryText)
                     }
@@ -95,7 +95,7 @@ struct EditSubscriptionView: View {
                                         .toolbar {
                                             ToolbarItemGroup(placement: .keyboard) {
                                                 Spacer()
-                                                Button("完成") {
+                                                Button(String(.done)) {
                                                     isCostFieldFocused = false
                                                 }
                                             }
@@ -115,30 +115,52 @@ struct EditSubscriptionView: View {
                                         Button(action: {
                                             selectedCurrency = currency
                                         }) {
-                                            HStack {
+                                            HStack(spacing: 12) {
+                                                // 貨幣符號
                                                 Text(currency.symbol)
-                                                    .font(.system(size: 14, weight: .semibold))
-                                                Text(currency.displayName)
-                                                    .font(.system(size: 14, weight: .regular))
+                                                    .font(.system(size: 16, weight: .bold))
+                                                    .foregroundColor(.primary)
+                                                    .frame(width: 32, alignment: .leading)
+                                                
+                                                // 貨幣信息
+                                                VStack(alignment: .leading, spacing: 2) {
+                                                    Text(currency.displayName)
+                                                        .font(.system(size: 15, weight: .medium))
+                                                        .foregroundColor(.primary)
+                                                    
+                                                    Text(currency.rawValue)
+                                                        .font(.system(size: 13, weight: .regular))
+                                                        .foregroundColor(.secondary)
+                                                }
+                                                
                                                 if currency == selectedCurrency {
                                                     Spacer()
                                                     Image(systemName: "checkmark")
+                                                        .font(.system(size: 14, weight: .semibold))
+                                                        .foregroundColor(.blue)
                                                 }
                                             }
+                                            .padding(.vertical, 4)
                                         }
                                     }
                                 } label: {
-                                    Text("\(selectedCurrency.symbol) \(selectedCurrency.displayName)")
-                                        .font(.system(size: 14, weight: .regular))
-                                        .foregroundColor(appColors.primaryText)
-                                        .padding(.horizontal, 16)
-                                        .padding(.vertical, 12)
-                                        .background(appColors.secondaryBackground)
-                                        .cornerRadius(12)
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 12)
-                                                .stroke(appColors.border, lineWidth: 1)
-                                        )
+                                    HStack {
+                                        Text(selectedCurrency.symbol)
+                                            .font(.system(size: 14, weight: .semibold))
+                                        Spacer()
+                                        Image(systemName: "chevron.down")
+                                            .font(.system(size: 10))
+                                            .foregroundColor(appColors.secondaryText)
+                                    }
+                                    .foregroundColor(appColors.primaryText)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 12)
+                                    .background(appColors.secondaryBackground)
+                                    .cornerRadius(12)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(appColors.border, lineWidth: 1)
+                                    )
                                 }
                             }
                         }
@@ -193,7 +215,7 @@ struct EditSubscriptionView: View {
                         
                         // Next Payment Date
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("下次付款日期")
+                            Text(.nextPaymentDate)
                                 .font(.system(size: 14, weight: .semibold))
                                 .foregroundColor(appColors.primaryText)
                             
@@ -288,7 +310,7 @@ struct EditSubscriptionView: View {
             .background(appColors.background)
             .navigationBarHidden(true)
             .alert(String(.errorTitle), isPresented: $showingError) {
-                Button("確定") { }
+                Button(String(.ok)) { }
             } message: {
                 Text(errorMessage)
             }

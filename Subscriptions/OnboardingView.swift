@@ -21,7 +21,7 @@ struct OnboardingView: View {
             // Skip button
             HStack {
                 Spacer()
-                Button("跳過") {
+                Button(String(.skip)) {
                     completeOnboarding()
                 }
                 .font(.system(size: 16, weight: .medium))
@@ -59,7 +59,7 @@ struct OnboardingView: View {
                         Button(action: {
                             completeOnboarding()
                         }) {
-                            Text("開始使用")
+                            Text(.getStarted)
                                 .font(.system(size: 16, weight: .semibold))
                                 .foregroundColor(appColors.background)
                                 .frame(maxWidth: .infinity)
@@ -75,7 +75,7 @@ struct OnboardingView: View {
                                 currentPage += 1
                             }
                         }) {
-                            Text("下一步")
+                            Text(.next)
                                 .font(.system(size: 16, weight: .semibold))
                                 .foregroundColor(appColors.background)
                                 .frame(maxWidth: .infinity)
@@ -142,7 +142,7 @@ struct OnboardingPageView: View {
                     Button(action: {
                         requestNotificationPermission()
                     }) {
-                        Text("開啟通知提醒")
+                        Text(.enableNotifications)
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundColor(appColors.background)
                             .frame(maxWidth: .infinity)
@@ -172,29 +172,39 @@ struct OnboardingPageView: View {
 
 struct OnboardingPage {
     let iconName: String
-    let title: String
-    let description: String
+    let titleKey: LocalizationKey
+    let descriptionKey: LocalizationKey
+    
+    var title: String {
+        let localizationManager = LocalizationManager.shared
+        return localizationManager.localizedString(for: titleKey)
+    }
+    
+    var description: String {
+        let localizationManager = LocalizationManager.shared
+        return localizationManager.localizedString(for: descriptionKey)
+    }
     
     static let allPages = [
         OnboardingPage(
             iconName: "creditcard.and.123",
-            title: "追蹤您的訂閱",
-            description: "輕鬆管理所有月費和年費服務，再也不怕忘記取消不需要的訂閱。"
+            titleKey: .trackSubscriptionsTitle,
+            descriptionKey: .trackSubscriptionsDescription
         ),
         OnboardingPage(
             iconName: "chart.bar.doc.horizontal",
-            title: "分析支出趨勢",
-            description: "清楚了解每個月的訂閱支出分佈，幫助您做出更明智的財務決策。"
+            titleKey: .analyzeSpendingTitle,
+            descriptionKey: .analyzeSpendingDescription
         ),
         OnboardingPage(
             iconName: "bell.badge",
-            title: "智慧付款提醒",
-            description: "扣款前 2 天自動發送通知，避免意外扣款，讓您的財務規劃更加穩定。"
+            titleKey: .smartRemindersTitle,
+            descriptionKey: .smartRemindersDescription
         ),
         OnboardingPage(
             iconName: "sparkles",
-            title: "極簡使用體驗",
-            description: "專注於真正重要的功能，簡潔的介面讓訂閱管理變得輕鬆愉快。"
+            titleKey: .minimalExperienceTitle,
+            descriptionKey: .minimalExperienceDescription
         )
     ]
 }

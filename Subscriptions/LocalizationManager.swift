@@ -140,6 +140,22 @@ enum LocalizationKey {
     case lightTheme
     case darkTheme
     case systemTheme
+    case paymentReminders
+    case showOnboardingAgain
+    case autoCalculateNextPayment
+    case autoCalculateNextPaymentDescription
+    case selectService
+    case searchOrCustomize
+    case done
+    case ok
+    case startDate
+    case billingCycleLabel
+    case description
+    case monthlyEquivalent
+    case yearlyEquivalent
+    case editSubscription
+    case updateServiceInfo
+    case nextPaymentDate
     
     // Common
     case today
@@ -150,6 +166,25 @@ enum LocalizationKey {
     // Stats page specific
     case categoryAnalysisDescription
     case percentageOfTotal
+    
+    // Category Detail
+    case back
+    case noCategorySubscriptions
+    case noCategorySubscriptionsDescription
+    
+    // Onboarding
+    case skip
+    case next
+    case getStarted
+    case enableNotifications
+    case trackSubscriptionsTitle
+    case trackSubscriptionsDescription
+    case analyzeSpendingTitle
+    case analyzeSpendingDescription
+    case smartRemindersTitle
+    case smartRemindersDescription
+    case minimalExperienceTitle
+    case minimalExperienceDescription
     
     func localized(for language: AppLanguage) -> String {
         switch language {
@@ -162,7 +197,7 @@ enum LocalizationKey {
     
     private var englishTranslation: String {
         switch self {
-        case .appTitle: return "LifeOS: Subscriptions"
+        case .appTitle: return "Subscriptions"
         case .appSubtitle: return "Minimalist subscription tracking"
         case .dashboard: return "Dashboard"
         case .total: return "Total"
@@ -225,18 +260,49 @@ enum LocalizationKey {
         case .lightTheme: return "Light"
         case .darkTheme: return "Dark"
         case .systemTheme: return "System"
+        case .paymentReminders: return "Payment Reminders"
+        case .showOnboardingAgain: return "Show Onboarding Again"
+        case .autoCalculateNextPayment: return "Auto-calculate next payment"
+        case .autoCalculateNextPaymentDescription: return ""
+        case .selectService: return "Select Service"
+        case .searchOrCustomize: return "Search common services or customize..."
+        case .done: return "Done"
+        case .ok: return "OK"
+        case .startDate: return "Start Date"
+        case .billingCycleLabel: return "Billing Cycle"
+        case .description: return "Description"
+        case .monthlyEquivalent: return "Monthly Equivalent"
+        case .yearlyEquivalent: return "Yearly Equivalent"
+        case .editSubscription: return "Edit Subscription"
+        case .updateServiceInfo: return "Update your service information"
+        case .nextPaymentDate: return "Next Payment Date"
         case .today: return "Today"
         case .tomorrow: return "Tomorrow"
         case .inDays: return "in %d days"
         case .activeServicesCount: return "%d active services"
         case .categoryAnalysisDescription: return "Analyze your monthly spending distribution"
         case .percentageOfTotal: return "% of total"
+        case .back: return "Back"
+        case .noCategorySubscriptions: return "No Subscriptions in this Category"
+        case .noCategorySubscriptionsDescription: return "Add a subscription to this category to see it here"
+        case .skip: return "Skip"
+        case .next: return "Next"
+        case .getStarted: return "Get Started"
+        case .enableNotifications: return "Enable Notifications"
+        case .trackSubscriptionsTitle: return "Track Your Subscriptions"
+        case .trackSubscriptionsDescription: return "Easily manage all your monthly and annual services, never forget to cancel unwanted subscriptions."
+        case .analyzeSpendingTitle: return "Analyze Spending Trends"
+        case .analyzeSpendingDescription: return "Clearly understand your monthly subscription spending distribution to help you make smarter financial decisions."
+        case .smartRemindersTitle: return "Smart Payment Reminders"
+        case .smartRemindersDescription: return "Automatic notifications 2 days before charges, avoid unexpected billing and keep your financial planning stable."
+        case .minimalExperienceTitle: return "Minimal Experience"
+        case .minimalExperienceDescription: return "Focus on truly important features, clean interface makes subscription management easy and enjoyable."
         }
     }
     
     private var chineseTranslation: String {
         switch self {
-        case .appTitle: return "LifeOS: 訂閱管理"
+        case .appTitle: return "訂閱管理"
         case .appSubtitle: return "極簡訂閱追蹤"
         case .dashboard: return "主頁"
         case .total: return "總計"
@@ -262,7 +328,7 @@ enum LocalizationKey {
         case .language: return "語言"
         case .languageDescription: return "選擇您偏好的語言"
         case .totalSubscriptions: return "訂閱總數"
-        case .totalSubscriptionsDescription: return "個活躍服務"
+        case .totalSubscriptionsDescription: return "個訂閱服務"
         case .monthlyTotal: return "月度總計"
         case .monthlyTotalDescription: return "所有訂閱總和"
         case .yearlyTotal: return "年度總計"
@@ -271,7 +337,7 @@ enum LocalizationKey {
         case .madeWithCare: return "用心製作"
         case .madeWithCareDescription: return "為簡潔高效而生"
         case .addNewSubscription: return "新增訂閱"
-        case .trackYourServices: return "追蹤您的月度服務"
+        case .trackYourServices: return "追蹤您的訂閱服務"
         case .serviceName: return "服務名稱"
         case .serviceNamePlaceholder: return "例如：Netflix、Spotify、Adobe..."
         case .amount: return "金額"
@@ -284,7 +350,7 @@ enum LocalizationKey {
         case .enterServiceName: return "請輸入服務名稱"
         case .enterValidAmount: return "請輸入有效金額"
         case .allSubscriptions: return "所有訂閱"
-        case .activeServices: return "個活躍服務"
+        case .activeServices: return "個訂閱服務"
         case .noSubscriptionsYet: return "尚無訂閱"
         case .addFirstSubscription: return "新增您的第一個訂閱開始使用"
         case .close: return "關閉"
@@ -292,19 +358,50 @@ enum LocalizationKey {
         case .edit: return "編輯"
         case .delete: return "刪除"
         case .deleteConfirmTitle: return "刪除訂閱"
-        case .deleteConfirmMessage: return "確定要刪除「%@」嗎？此操作無法復原。"
+        case .deleteConfirmMessage: return "確定要刪除「%@」嗎？"
         case .per: return "每"
         case .appearance: return "外觀"
         case .appearanceDescription: return "選擇您偏好的主題"
         case .lightTheme: return "淺色"
         case .darkTheme: return "深色"
-        case .systemTheme: return "跟隨系統"
+        case .systemTheme: return "系統設定"
+        case .paymentReminders: return "付款提醒"
+        case .showOnboardingAgain: return "重新觀看導覽"
+        case .autoCalculateNextPayment: return "自動計算下次付款"
+        case .autoCalculateNextPaymentDescription: return ""
+        case .selectService: return "選擇服務"
+        case .searchOrCustomize: return "搜尋常見服務或自定義..."
+        case .done: return "完成"
+        case .ok: return "確定"
+        case .startDate: return "開始日期"
+        case .billingCycleLabel: return "計費週期"
+        case .description: return "描述"
+        case .monthlyEquivalent: return "月費換算"
+        case .yearlyEquivalent: return "年費換算"
+        case .editSubscription: return "編輯訂閱"
+        case .updateServiceInfo: return "更新您的服務資訊"
+        case .nextPaymentDate: return "下次付款日期"
         case .today: return "今天"
         case .tomorrow: return "明天"
         case .inDays: return "%d天後"
-        case .activeServicesCount: return "%d個活躍服務"
-        case .categoryAnalysisDescription: return "分析您的月度支出分佈"
-        case .percentageOfTotal: return "% 佔總額"
+        case .activeServicesCount: return "%d個訂閱服務"
+        case .categoryAnalysisDescription: return "分析您的每月支出分佈"
+        case .percentageOfTotal: return "%"
+        case .back: return "返回"
+        case .noCategorySubscriptions: return "此分類無訂閱項目"
+        case .noCategorySubscriptionsDescription: return "新增此分類的訂閱即可在此查看"
+        case .skip: return "跳過"
+        case .next: return "下一步"
+        case .getStarted: return "開始使用"
+        case .enableNotifications: return "開啟通知提醒"
+        case .trackSubscriptionsTitle: return "追蹤您的訂閱"
+        case .trackSubscriptionsDescription: return "輕鬆管理所有月費和年費服務，再也不怕忘記取消不需要的訂閱。"
+        case .analyzeSpendingTitle: return "分析支出趨勢"
+        case .analyzeSpendingDescription: return "清楚了解每個月的訂閱支出分佈，幫助您做出更明智的財務決策。"
+        case .smartRemindersTitle: return "智慧付款提醒"
+        case .smartRemindersDescription: return "扣款前 2 天自動發送通知，避免意外扣款，讓您的財務規劃更加穩定。"
+        case .minimalExperienceTitle: return "極簡使用體驗"
+        case .minimalExperienceDescription: return "專注於真正重要的功能，簡潔的介面讓訂閱管理變得輕鬆愉快。"
         }
     }
 }

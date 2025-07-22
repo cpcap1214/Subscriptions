@@ -19,10 +19,10 @@ struct AddSubscriptionView: View {
     @State private var selectedBillingCycle = BillingCycle.monthly
     @State private var selectedCategory = SubscriptionCategory.entertainment
     @State private var firstPaymentDate = Date()
+    @State private var autoCalculateNextPayment = true
     
     @State private var showingError = false
     @State private var errorMessage = ""
-    @State private var showingPresetServices = false
     @State private var searchText = ""
     @FocusState private var isNameFieldFocused: Bool
     @FocusState private var isCostFieldFocused: Bool
@@ -44,41 +44,7 @@ struct AddSubscriptionView: View {
                     .padding(.top, 20)
                     
                     VStack(spacing: 24) {
-                        // Preset Services Button
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("選擇服務")
-                                .font(.system(size: 14, weight: .semibold))
-                                .foregroundColor(appColors.primaryText)
-                            
-                            Button(action: {
-                                showingPresetServices = true
-                            }) {
-                                HStack {
-                                    Image(systemName: "magnifyingglass")
-                                        .foregroundColor(appColors.secondaryText)
-                                    
-                                    Text("搜尋常見服務或自定義...")
-                                        .font(.system(size: 16, weight: .regular))
-                                        .foregroundColor(appColors.secondaryText)
-                                    
-                                    Spacer()
-                                    
-                                    Image(systemName: "chevron.right")
-                                        .foregroundColor(appColors.secondaryText)
-                                        .font(.system(size: 12))
-                                }
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 12)
-                                .background(appColors.secondaryBackground)
-                                .cornerRadius(12)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(appColors.border, lineWidth: 1)
-                                )
-                            }
-                        }
-                        
-                        // Service Name (Manual Entry)
+                        // Service Name
                         VStack(alignment: .leading, spacing: 8) {
                             Text(.serviceName)
                                 .font(.system(size: 14, weight: .semibold))
@@ -120,7 +86,7 @@ struct AddSubscriptionView: View {
                                         .toolbar {
                                             ToolbarItemGroup(placement: .keyboard) {
                                                 Spacer()
-                                                Button("完成") {
+                                                Button(String(.done)) {
                                                     isCostFieldFocused = false
                                                 }
                                             }
@@ -140,30 +106,52 @@ struct AddSubscriptionView: View {
                                         Button(action: {
                                             selectedCurrency = currency
                                         }) {
-                                            HStack {
+                                            HStack(spacing: 12) {
+                                                // 貨幣符號
                                                 Text(currency.symbol)
-                                                    .font(.system(size: 14, weight: .semibold))
-                                                Text(currency.displayName)
-                                                    .font(.system(size: 14, weight: .regular))
+                                                    .font(.system(size: 16, weight: .bold))
+                                                    .foregroundColor(.primary)
+                                                    .frame(width: 32, alignment: .leading)
+                                                
+                                                // 貨幣信息
+                                                VStack(alignment: .leading, spacing: 2) {
+                                                    Text(currency.displayName)
+                                                        .font(.system(size: 15, weight: .medium))
+                                                        .foregroundColor(.primary)
+                                                    
+                                                    Text(currency.rawValue)
+                                                        .font(.system(size: 13, weight: .regular))
+                                                        .foregroundColor(.secondary)
+                                                }
+                                                
                                                 if currency == selectedCurrency {
                                                     Spacer()
                                                     Image(systemName: "checkmark")
+                                                        .font(.system(size: 14, weight: .semibold))
+                                                        .foregroundColor(.blue)
                                                 }
                                             }
+                                            .padding(.vertical, 4)
                                         }
                                     }
                                 } label: {
-                                    Text("\(selectedCurrency.symbol) \(selectedCurrency.displayName)")
-                                        .font(.system(size: 14, weight: .regular))
-                                        .foregroundColor(appColors.primaryText)
-                                        .padding(.horizontal, 16)
-                                        .padding(.vertical, 12)
-                                        .background(Color(.systemGray6))
-                                        .cornerRadius(12)
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 12)
-                                                .stroke(Color(.systemGray4), lineWidth: 1)
-                                        )
+                                    HStack {
+                                        Text(selectedCurrency.symbol)
+                                            .font(.system(size: 14, weight: .semibold))
+                                        Spacer()
+                                        Image(systemName: "chevron.down")
+                                            .font(.system(size: 10))
+                                            .foregroundColor(appColors.secondaryText)
+                                    }
+                                    .foregroundColor(appColors.primaryText)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 12)
+                                    .background(Color(.systemGray6))
+                                    .cornerRadius(12)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(Color(.systemGray4), lineWidth: 1)
+                                    )
                                 }
                             }
                         }
@@ -216,22 +204,44 @@ struct AddSubscriptionView: View {
                             }
                         }
                         
-                        // First Payment Date
+                        // Auto-calculate Next Payment Toggle
                         VStack(alignment: .leading, spacing: 8) {
-                            Text(.firstPaymentDate)
-                                .font(.system(size: 14, weight: .semibold))
-                                .foregroundColor(appColors.primaryText)
-                            
-                            DatePicker("", selection: $firstPaymentDate, displayedComponents: .date)
-                                .datePickerStyle(.compact)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 8)
-                                .background(Color(.systemGray6))
-                                .cornerRadius(12)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color(.systemGray4), lineWidth: 1)
-                                )
+                            HStack {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(.autoCalculateNextPayment)
+                                        .font(.system(size: 14, weight: .semibold))
+                                        .foregroundColor(appColors.primaryText)
+                                    
+                                    Text(.autoCalculateNextPaymentDescription)
+                                        .font(.system(size: 12, weight: .regular))
+                                        .foregroundColor(appColors.secondaryText)
+                                }
+                                
+                                Spacer()
+                                
+                                Toggle("", isOn: $autoCalculateNextPayment)
+                                    .toggleStyle(SwitchToggleStyle())
+                            }
+                        }
+                        
+                        // First Payment Date (only show if auto-calculate is off)
+                        if !autoCalculateNextPayment {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text(.firstPaymentDate)
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundColor(appColors.primaryText)
+                                
+                                DatePicker("", selection: $firstPaymentDate, displayedComponents: .date)
+                                    .datePickerStyle(.compact)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 8)
+                                    .background(Color(.systemGray6))
+                                    .cornerRadius(12)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(Color(.systemGray4), lineWidth: 1)
+                                    )
+                            }
                         }
                         
                         // Billing Cycle
@@ -313,22 +323,9 @@ struct AddSubscriptionView: View {
             .background(appColors.background)
             .navigationBarHidden(true)
             .alert(String(.errorTitle), isPresented: $showingError) {
-                Button("確定") { }
+                Button(String(.ok)) { }
             } message: {
                 Text(errorMessage)
-            }
-            .sheet(isPresented: $showingPresetServices) {
-                PresetServiceSelectionView(
-                    selectedService: { service in
-                        name = service.name
-                        cost = String(format: "%.2f", service.defaultCost)
-                        selectedCurrency = Currency(rawValue: service.defaultCurrency) ?? .usd
-                        selectedCategory = service.category
-                        selectedBillingCycle = service.defaultBillingCycle
-                    }
-                )
-                .environmentObject(localizationManager)
-                .themed()
             }
         }
         .onAppear {
@@ -353,12 +350,37 @@ struct AddSubscriptionView: View {
             return
         }
         
+        // Calculate next payment date
+        let nextPaymentDate: Date
+        if autoCalculateNextPayment {
+            // Calculate next payment date based on billing cycle from today
+            let today = Date()
+            var components = DateComponents()
+            
+            switch selectedBillingCycle {
+            case .weekly:
+                components.weekOfYear = 1
+            case .monthly:
+                components.month = 1
+            case .quarterly:
+                components.month = 3
+            case .semiAnnually:
+                components.month = 6
+            case .annually:
+                components.year = 1
+            }
+            
+            nextPaymentDate = Calendar.current.date(byAdding: components, to: today) ?? today
+        } else {
+            nextPaymentDate = firstPaymentDate
+        }
+        
         let subscription = Subscription(
             name: name,
             cost: costValue,
             currency: selectedCurrency.rawValue,
             billingCycle: selectedBillingCycle,
-            nextPaymentDate: firstPaymentDate,
+            nextPaymentDate: nextPaymentDate,
             category: selectedCategory
         )
         

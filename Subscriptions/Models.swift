@@ -238,13 +238,11 @@ enum Currency: String, CaseIterable, Codable {
     case eur = "EUR"
     case gbp = "GBP"
     case jpy = "JPY"
-    case cad = "CAD"
-    case aud = "AUD"
     case twd = "TWD"
     
     var symbol: String {
         switch self {
-        case .usd, .cad, .aud:
+        case .usd:
             return "$"
         case .eur:
             return "€"
@@ -277,10 +275,6 @@ enum Currency: String, CaseIterable, Codable {
             return "British Pound"
         case .jpy:
             return "Japanese Yen"
-        case .cad:
-            return "Canadian Dollar"
-        case .aud:
-            return "Australian Dollar"
         case .twd:
             return "Taiwan Dollar"
         }
@@ -296,10 +290,6 @@ enum Currency: String, CaseIterable, Codable {
             return "英鎊"
         case .jpy:
             return "日圓"
-        case .cad:
-            return "加幣"
-        case .aud:
-            return "澳幣"
         case .twd:
             return "新台幣"
         }
@@ -315,7 +305,7 @@ extension Subscription {
             billingCycle: .monthly,
             nextPaymentDate: Calendar.current.date(byAdding: .day, value: 3, to: Date()) ?? Date(),
             category: .music,
-            description: "Music streaming service"
+            description: "音樂串流服務"
         ),
         Subscription(
             name: "Netflix",
@@ -324,7 +314,7 @@ extension Subscription {
             billingCycle: .monthly,
             nextPaymentDate: Calendar.current.date(byAdding: .day, value: 12, to: Date()) ?? Date(),
             category: .streaming,
-            description: "Video streaming platform"
+            description: "影音串流平台"
         ),
         Subscription(
             name: "Adobe Creative Cloud",
@@ -333,7 +323,7 @@ extension Subscription {
             billingCycle: .annually,
             nextPaymentDate: Calendar.current.date(byAdding: .day, value: 45, to: Date()) ?? Date(),
             category: .productivity,
-            description: "Creative software suite"
+            description: "創意軟體套件"
         ),
         Subscription(
             name: "Notion Pro",
@@ -342,7 +332,7 @@ extension Subscription {
             billingCycle: .annually,
             nextPaymentDate: Calendar.current.date(byAdding: .day, value: 180, to: Date()) ?? Date(),
             category: .productivity,
-            description: "Productivity and note-taking app"
+            description: "生產力與筆記應用"
         ),
         Subscription(
             name: "GitHub Pro",
@@ -351,7 +341,7 @@ extension Subscription {
             billingCycle: .monthly,
             nextPaymentDate: Calendar.current.date(byAdding: .day, value: 28, to: Date()) ?? Date(),
             category: .business,
-            description: "Code repository hosting"
+            description: "程式碼儲存庫託管"
         )
     ]
 }

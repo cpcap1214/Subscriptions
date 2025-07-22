@@ -319,10 +319,11 @@ struct StatsView: View {
             .background(appColors.background)
             .navigationBarHidden(true)
             .sheet(isPresented: $showingCategoryDetail) {
-                CategoryDetailView(category: selectedCategory!)
-                    .environmentObject(dataManager)
-                    .environmentObject(localizationManager)
-                    .themed()
+                if let category = selectedCategory {
+                    CategoryDetailView(category: category)
+                        .environmentObject(dataManager)
+                        .environmentObject(localizationManager)
+                }
             }
         }
     }
@@ -466,6 +467,31 @@ struct UpcomingPaymentRowView: View {
         return calendar.dateComponents([.day], from: today, to: paymentDate).day ?? 0
     }
     
+    private var effectiveDaysUntilPayment: Int {
+        if daysUntilPayment < 0 {
+            // For overdue payments, calculate next payment cycle
+            let nextPayment = subscription.nextPaymentDateAfter(Date())
+            let calendar = Calendar.current
+            let today = calendar.startOfDay(for: Date())
+            let nextPaymentDate = calendar.startOfDay(for: nextPayment)
+            return calendar.dateComponents([.day], from: today, to: nextPaymentDate).day ?? 0
+        } else {
+            return daysUntilPayment
+        }
+    }
+    
+    private var paymentDateText: String {
+        let effectiveDays = effectiveDaysUntilPayment
+        
+        if effectiveDays == 0 {
+            return String(.today)
+        } else if effectiveDays == 1 {
+            return String(.tomorrow)
+        } else {
+            return String(.inDays).replacingOccurrences(of: "%d", with: "\(effectiveDays)")
+        }
+    }
+    
     var body: some View {
         VStack(spacing: 16) {
             // Top row: Service name and amount
@@ -509,19 +535,19 @@ struct UpcomingPaymentRowView: View {
                 
                 // Countdown
                 HStack(spacing: 6) {
-                    Image(systemName: daysUntilPayment <= 3 ? "exclamationmark.triangle.fill" : "clock")
+                    Image(systemName: effectiveDaysUntilPayment <= 3 ? "exclamationmark.triangle.fill" : "clock")
                         .font(.system(size: 12))
-                        .foregroundColor(daysUntilPayment <= 3 ? appColors.destructive : appColors.secondaryText)
+                        .foregroundColor(effectiveDaysUntilPayment <= 3 ? appColors.destructive : appColors.secondaryText)
                     
-                    Text(daysUntilPayment == 0 ? String(.today) : daysUntilPayment == 1 ? String(.tomorrow) : String(.inDays).replacingOccurrences(of: "%d", with: "\(daysUntilPayment)"))
+                    Text(paymentDateText)
                         .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(daysUntilPayment <= 3 ? appColors.destructive : appColors.secondaryText)
+                        .foregroundColor(effectiveDaysUntilPayment <= 3 ? appColors.destructive : appColors.secondaryText)
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .background(
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(daysUntilPayment <= 3 ? appColors.destructive.opacity(0.1) : appColors.secondaryBackground)
+                        .fill(effectiveDaysUntilPayment <= 3 ? appColors.destructive.opacity(0.1) : appColors.secondaryBackground)
                 )
             }
         }
@@ -640,7 +666,7 @@ struct SettingsView: View {
                                 
                                 SettingsRowView(
                                     icon: "bell",
-                                    title: "付款提醒"
+                                    title: String(.paymentReminders)
                                 ) {
                                     Toggle("", isOn: Binding(
                                         get: { notificationManager.isNotificationEnabled },
@@ -673,21 +699,37 @@ struct SettingsView: View {
                                             Button(action: {
                                                 dataManager.savePreferredCurrency(currency)
                                             }) {
-                                                HStack {
+                                                HStack(spacing: 12) {
+                                                    // 貨幣符號
                                                     Text(currency.symbol)
-                                                        .font(.system(size: 14, weight: .semibold))
-                                                    Text(currency.displayName)
-                                                        .font(.system(size: 14, weight: .regular))
+                                                        .font(.system(size: 16, weight: .bold))
+                                                        .foregroundColor(.primary)
+                                                        .frame(width: 32, alignment: .leading)
+                                                    
+                                                    // 貨幣信息
+                                                    VStack(alignment: .leading, spacing: 2) {
+                                                        Text(currency.displayName)
+                                                            .font(.system(size: 15, weight: .medium))
+                                                            .foregroundColor(.primary)
+                                                        
+                                                        Text(currency.rawValue)
+                                                            .font(.system(size: 13, weight: .regular))
+                                                            .foregroundColor(.secondary)
+                                                    }
+                                                    
                                                     if currency == dataManager.preferredCurrency {
                                                         Spacer()
                                                         Image(systemName: "checkmark")
+                                                            .font(.system(size: 14, weight: .semibold))
+                                                            .foregroundColor(.blue)
                                                     }
                                                 }
+                                                .padding(.vertical, 4)
                                             }
                                         }
                                     } label: {
                                         HStack {
-                                            Text("\(dataManager.preferredCurrency.symbol) \(dataManager.preferredCurrency.displayName)")
+                                            Text(dataManager.preferredCurrency.symbol)
                                                 .font(.system(size: 14, weight: .regular))
                                             Image(systemName: "chevron.down")
                                                 .font(.system(size: 10))
@@ -783,7 +825,7 @@ struct SettingsView: View {
                                 }) {
                                     SettingsRowView(
                                         icon: "arrow.clockwise",
-                                        title: "重新觀看導覽"
+                                        title: String(.showOnboardingAgain)
                                     ) {
                                         Image(systemName: "chevron.right")
                                             .font(.system(size: 12))
@@ -873,97 +915,142 @@ struct CategoryDetailView: View {
     @EnvironmentObject var dataManager: DataManager
     @EnvironmentObject var localizationManager: LocalizationManager
     @Environment(\.appColors) var appColors
-    @Environment(\.dismiss) var dismiss
+    @Environment(\.presentationMode) var presentationMode
     
     private var categorySubscriptions: [Subscription] {
-        dataManager.activeSubscriptions.filter { $0.category == category }
+        dataManager.subscriptionsForCategory(category)
     }
     
-    private var totalCategoryCost: Double {
-        categorySubscriptions.reduce(0) { $0 + $1.cost }
+    private var categoryCost: Double {
+        dataManager.totalCostForCategory(category)
     }
     
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
-                // Header
-                VStack(spacing: 16) {
-                    // Category icon and name
-                    VStack(spacing: 12) {
-                        ZStack {
-                            Circle()
-                                .fill(appColors.secondaryBackground)
-                                .frame(width: 64, height: 64)
-                            
-                            Image(systemName: category.iconName)
-                                .font(.system(size: 28, weight: .medium))
-                                .foregroundColor(appColors.primaryText)
-                        }
-                        
-                        Text(category.displayName)
-                            .font(.system(size: 24, weight: .bold))
-                            .foregroundColor(appColors.primaryText)
-                    }
-                    
-                    // Category stats
-                    VStack(spacing: 8) {
-                        Text(dataManager.formattedCurrency(totalCategoryCost))
-                            .font(.system(size: 32, weight: .bold))
-                            .foregroundColor(appColors.primaryText)
-                        
-                        Text("\(categorySubscriptions.count) 項服務")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(appColors.secondaryText)
-                    }
-                }
-                .padding(.top, 20)
-                .padding(.bottom, 32)
-                .padding(.horizontal, 24)
-                
-                // Subscriptions list
-                if categorySubscriptions.isEmpty {
-                    VStack(spacing: 16) {
-                        Image(systemName: "tray")
-                            .font(.system(size: 48))
-                            .foregroundColor(appColors.secondaryText)
-                            .opacity(0.6)
-                        
-                        Text("此分類暫無訂閱服務")
+                // Header with close button
+                HStack {
+                    Button(action: {
+                        presentationMode.wrappedValue.dismiss()
+                    }) {
+                        Image(systemName: "xmark")
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(appColors.secondaryText)
+                            .frame(width: 32, height: 32)
+                            .background(appColors.secondaryBackground)
+                            .clipShape(Circle())
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(appColors.background)
-                } else {
-                    ScrollView {
-                        LazyVStack(spacing: 1) {
-                            ForEach(categorySubscriptions) { subscription in
-                                CategorySubscriptionRowView(subscription: subscription)
-                                    .background(appColors.cardBackground)
+                    
+                    Spacer()
+                    
+                    Text(category.displayName)
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(appColors.primaryText)
+                    
+                    Spacer()
+                    
+                    // Placeholder for symmetry
+                    Rectangle()
+                        .fill(Color.clear)
+                        .frame(width: 32, height: 32)
+                }
+                .padding(.horizontal, 24)
+                .padding(.top, 20)
+                .padding(.bottom, 16)
+                .background(appColors.background)
+                
+                // Content
+                ScrollView {
+                    VStack(spacing: 24) {
+                        // Category summary
+                        VStack(spacing: 16) {
+                            // Icon
+                            ZStack {
+                                Circle()
+                                    .fill(appColors.accent.opacity(0.1))
+                                    .frame(width: 80, height: 80)
+                                
+                                Image(systemName: category.iconName)
+                                    .font(.system(size: 32, weight: .medium))
+                                    .foregroundColor(appColors.accent)
+                            }
+                            
+                            // Cost info
+                            VStack(spacing: 8) {
+                                Text(dataManager.formattedCurrency(categoryCost))
+                                    .font(.system(size: 36, weight: .bold))
+                                    .foregroundColor(appColors.primaryText)
+                                
+                                HStack(spacing: 4) {
+                                    Text(.monthlyTotal)
+                                        .font(.system(size: 16, weight: .medium))
+                                        .foregroundColor(appColors.secondaryText)
+                                    
+                                    Text("•")
+                                        .font(.system(size: 16))
+                                        .foregroundColor(appColors.secondaryText)
+                                    
+                                    Text("\(categorySubscriptions.count) services")
+                                        .font(.system(size: 16, weight: .medium))
+                                        .foregroundColor(appColors.secondaryText)
+                                }
                             }
                         }
-                        .background(appColors.cardBackground)
-                        .cornerRadius(16)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 16)
-                                .stroke(appColors.border, lineWidth: 0.5)
-                        )
-                        .padding(.horizontal, 24)
+                        .padding(.top, 20)
+                        
+                        // Subscriptions list
+                        if categorySubscriptions.isEmpty {
+                            // Empty state
+                            VStack(spacing: 20) {
+                                Image(systemName: "doc.text")
+                                    .font(.system(size: 48))
+                                    .foregroundColor(appColors.secondaryText.opacity(0.6))
+                                
+                                VStack(spacing: 8) {
+                                    Text(.noCategorySubscriptions)
+                                        .font(.system(size: 18, weight: .semibold))
+                                        .foregroundColor(appColors.primaryText)
+                                    
+                                    Text(.noCategorySubscriptionsDescription)
+                                        .font(.system(size: 14, weight: .regular))
+                                        .foregroundColor(appColors.secondaryText)
+                                        .multilineTextAlignment(.center)
+                                }
+                            }
+                            .padding(.top, 60)
+                            .padding(.horizontal, 32)
+                        } else {
+                            // Subscriptions list
+                            VStack(spacing: 0) {
+                                ForEach(Array(categorySubscriptions.enumerated()), id: \.element.id) { index, subscription in
+                                    VStack(spacing: 0) {
+                                        CategorySubscriptionRowView(subscription: subscription)
+                                        
+                                        // Divider between items (except last)
+                                        if index < categorySubscriptions.count - 1 {
+                                            Rectangle()
+                                                .fill(appColors.border)
+                                                .frame(height: 0.5)
+                                                .opacity(0.5)
+                                                .padding(.leading, 60)
+                                        }
+                                    }
+                                }
+                            }
+                            .background(appColors.cardBackground)
+                            .cornerRadius(16)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .stroke(appColors.border, lineWidth: 0.5)
+                            )
+                            .padding(.horizontal, 24)
+                        }
                     }
-                    .background(appColors.background)
+                    .padding(.bottom, 32)
                 }
+                .background(appColors.background)
             }
-            .background(appColors.background)
-            .navigationTitle(category.displayName)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("完成") {
-                        dismiss()
-                    }
-                    .foregroundColor(appColors.accent)
-                }
-            }
+            .navigationBarHidden(true)
         }
     }
 }
@@ -973,31 +1060,69 @@ struct CategorySubscriptionRowView: View {
     @EnvironmentObject var dataManager: DataManager
     @Environment(\.appColors) var appColors
     
+    private var effectiveDaysUntilPayment: Int {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        let paymentDate = calendar.startOfDay(for: subscription.nextPaymentDate)
+        let daysDifference = calendar.dateComponents([.day], from: today, to: paymentDate).day ?? 0
+        
+        if daysDifference < 0 {
+            // For overdue payments, calculate next payment cycle
+            let nextPayment = subscription.nextPaymentDateAfter(Date())
+            let nextPaymentDate = calendar.startOfDay(for: nextPayment)
+            return calendar.dateComponents([.day], from: today, to: nextPaymentDate).day ?? 0
+        } else {
+            return daysDifference
+        }
+    }
+    
+    private var paymentDateText: String {
+        let effectiveDays = effectiveDaysUntilPayment
+        
+        if effectiveDays == 0 {
+            return String(.today)
+        } else if effectiveDays == 1 {
+            return String(.tomorrow)
+        } else {
+            return "\(effectiveDays)d"
+        }
+    }
+    
     var body: some View {
         HStack(spacing: 16) {
-            // Service name and next payment
+            // Service icon
+            Image(systemName: subscription.category.iconName)
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(appColors.accent)
+                .frame(width: 24, height: 24)
+            
+            // Service info
             VStack(alignment: .leading, spacing: 4) {
                 Text(subscription.name)
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(appColors.primaryText)
                 
-                Text("下次付款：\(subscription.nextPaymentDate, formatter: DateFormatter.shortDate)")
-                    .font(.system(size: 14, weight: .regular))
-                    .foregroundColor(appColors.secondaryText)
+                HStack(spacing: 4) {
+                    Text(subscription.billingCycle.shortDisplayName)
+                        .font(.system(size: 13, weight: .regular))
+                        .foregroundColor(appColors.secondaryText)
+                    
+                    Text("•")
+                        .font(.system(size: 13))
+                        .foregroundColor(appColors.secondaryText)
+                    
+                    Text(paymentDateText)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(effectiveDaysUntilPayment <= 3 ? appColors.destructive : appColors.secondaryText)
+                }
             }
             
             Spacer()
             
-            // Cost and frequency
-            VStack(alignment: .trailing, spacing: 4) {
-                Text(dataManager.formattedCurrency(subscription.cost, currency: subscription.currency))
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(appColors.primaryText)
-                
-                Text(subscription.billingCycle.displayName)
-                    .font(.system(size: 14, weight: .regular))
-                    .foregroundColor(appColors.secondaryText)
-            }
+            // Cost
+            Text(dataManager.formattedCurrency(subscription.cost, currency: subscription.currency))
+                .font(.system(size: 16, weight: .bold))
+                .foregroundColor(appColors.primaryText)
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 16)
