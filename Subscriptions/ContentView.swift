@@ -488,7 +488,9 @@ struct UpcomingPaymentRowView: View {
         } else if effectiveDays == 1 {
             return String(.tomorrow)
         } else {
-            return String(.inDays).replacingOccurrences(of: "%d", with: "\(effectiveDays)")
+            let localizationManager = LocalizationManager.shared
+            let template = localizationManager.localizedString(for: .inDays)
+            return String(format: template, effectiveDays)
         }
     }
     
@@ -1084,7 +1086,7 @@ struct CategorySubscriptionRowView: View {
         } else if effectiveDays == 1 {
             return String(.tomorrow)
         } else {
-            return "\(effectiveDays)d"
+            return "\(effectiveDays)\(String(.daysSuffix))"
         }
     }
     

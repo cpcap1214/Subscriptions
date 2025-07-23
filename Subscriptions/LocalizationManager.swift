@@ -11,7 +11,7 @@ import SwiftUI
 class LocalizationManager: ObservableObject {
     static let shared = LocalizationManager()
     
-    @Published var currentLanguage: AppLanguage = .traditionalChinese {
+    @Published var currentLanguage: AppLanguage {
         didSet {
             saveLanguagePreference()
         }
@@ -21,22 +21,87 @@ class LocalizationManager: ObservableObject {
     private let languageKey = "AppLanguage"
     
     private init() {
+        // Set default language based on system language
+        self.currentLanguage = Self.getSystemLanguage()
+        print("🌐 系統檢測語言: \(self.currentLanguage.displayName)")
+        
         loadLanguagePreference()
+        print("🌐 最終使用語言: \(self.currentLanguage.displayName)")
     }
     
     private func loadLanguagePreference() {
+        // Only override system language if user has explicitly set a preference
         if let languageString = userDefaults.string(forKey: languageKey),
            let language = AppLanguage(rawValue: languageString) {
+            print("🌐 載入用戶偏好語言: \(language.displayName)")
             currentLanguage = language
+        } else {
+            print("🌐 無用戶偏好設定，保持系統檢測語言")
         }
+        // If no user preference exists, keep the system-detected language
     }
     
     private func saveLanguagePreference() {
         userDefaults.set(currentLanguage.rawValue, forKey: languageKey)
     }
     
+    private static func getSystemLanguage() -> AppLanguage {
+        // Get the preferred language from system settings
+        let preferredLanguages = Locale.preferredLanguages
+        print("🌐 系統偏好語言: \(preferredLanguages)")
+        
+        // Check if any preferred language matches our supported languages
+        for languageCode in preferredLanguages {
+            let baseLanguageCode = String(languageCode.prefix(2)) // Get base language code (e.g., "zh" from "zh-Hant-TW")
+            
+            switch baseLanguageCode {
+            case "zh":
+                // Check if it's Traditional Chinese (Taiwan, Hong Kong, etc.)
+                if languageCode.contains("Hant") || 
+                   languageCode.contains("TW") || 
+                   languageCode.contains("HK") || 
+                   languageCode.contains("MO") {
+                    print("🌐 檢測到繁體中文: \(languageCode)")
+                    return .traditionalChinese
+                }
+                // For Simplified Chinese, we'll default to Traditional Chinese since we only support Traditional
+                print("🌐 檢測到簡體中文，使用繁體中文: \(languageCode)")
+                return .traditionalChinese
+            case "en":
+                print("🌐 檢測到英文: \(languageCode)")
+                return .english
+            default:
+                continue
+            }
+        }
+        
+        // If no matching language found, check system region
+        let currentLocale = Locale.current
+        if let regionCode = currentLocale.regionCode {
+            switch regionCode {
+            case "TW", "HK", "MO": // Taiwan, Hong Kong, Macau
+                return .traditionalChinese
+            case "CN", "SG": // China, Singapore - but we only support Traditional Chinese
+                return .traditionalChinese
+            default:
+                break
+            }
+        }
+        
+        // Default to English if no specific preference is detected
+        print("🌐 未檢測到支援的語言，預設使用英文")
+        return .english
+    }
+    
     func localizedString(for key: LocalizationKey) -> String {
         return key.localized(for: currentLanguage)
+    }
+    
+    // Reset language preference to system default
+    func resetToSystemLanguage() {
+        userDefaults.removeObject(forKey: languageKey)
+        currentLanguage = Self.getSystemLanguage()
+        print("🌐 重設為系統語言: \(currentLanguage.displayName)")
     }
 }
 
@@ -161,6 +226,7 @@ enum LocalizationKey {
     case today
     case tomorrow
     case inDays
+    case daysSuffix
     case activeServicesCount
     
     // Stats page specific
@@ -185,6 +251,14 @@ enum LocalizationKey {
     case smartRemindersDescription
     case minimalExperienceTitle
     case minimalExperienceDescription
+    
+    // Notifications
+    case paymentReminderTitle
+    case paymentReminderBody
+    case testNotificationTitle
+    case testNotificationBody
+    case openAppAction
+    case remindLaterAction
     
     func localized(for language: AppLanguage) -> String {
         switch language {
@@ -279,6 +353,7 @@ enum LocalizationKey {
         case .today: return "Today"
         case .tomorrow: return "Tomorrow"
         case .inDays: return "in %d days"
+        case .daysSuffix: return "d"
         case .activeServicesCount: return "%d active services"
         case .categoryAnalysisDescription: return "Analyze your monthly spending distribution"
         case .percentageOfTotal: return "% of total"
@@ -297,6 +372,12 @@ enum LocalizationKey {
         case .smartRemindersDescription: return "Automatic notifications 2 days before charges, avoid unexpected billing and keep your financial planning stable."
         case .minimalExperienceTitle: return "Minimal Experience"
         case .minimalExperienceDescription: return "Focus on truly important features, clean interface makes subscription management easy and enjoyable."
+        case .paymentReminderTitle: return "Payment Reminder"
+        case .paymentReminderBody: return "%@ will be charged %@ in 2 days"
+        case .testNotificationTitle: return "🛠 Test Notification"
+        case .testNotificationBody: return "This is a test notification for %@, actual notifications will be sent 2 days before charges."
+        case .openAppAction: return "Open App"
+        case .remindLaterAction: return "Remind Later"
         }
     }
     
@@ -384,6 +465,7 @@ enum LocalizationKey {
         case .today: return "今天"
         case .tomorrow: return "明天"
         case .inDays: return "%d天後"
+        case .daysSuffix: return "天"
         case .activeServicesCount: return "%d個訂閱服務"
         case .categoryAnalysisDescription: return "分析您的每月支出分佈"
         case .percentageOfTotal: return "%"
@@ -402,6 +484,12 @@ enum LocalizationKey {
         case .smartRemindersDescription: return "扣款前 2 天自動發送通知，避免意外扣款，讓您的財務規劃更加穩定。"
         case .minimalExperienceTitle: return "極簡使用體驗"
         case .minimalExperienceDescription: return "專注於真正重要的功能，簡潔的介面讓訂閱管理變得輕鬆愉快。"
+        case .paymentReminderTitle: return "即將扣款提醒"
+        case .paymentReminderBody: return "%@ 將在 2 天後扣款 %@"
+        case .testNotificationTitle: return "🛠 測試通知"
+        case .testNotificationBody: return "這是 %@ 的測試通知，實際會在扣款前 2 天發送。"
+        case .openAppAction: return "開啟應用程式"
+        case .remindLaterAction: return "稍後提醒"
         }
     }
 }

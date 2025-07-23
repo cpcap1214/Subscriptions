@@ -297,51 +297,5 @@ enum Currency: String, CaseIterable, Codable {
 }
 
 extension Subscription {
-    static let sampleData: [Subscription] = [
-        Subscription(
-            name: "Spotify Premium",
-            cost: 9.99,
-            currency: "USD",
-            billingCycle: .monthly,
-            nextPaymentDate: Calendar.current.date(byAdding: .day, value: 3, to: Date()) ?? Date(),
-            category: .music,
-            description: "音樂串流服務"
-        ),
-        Subscription(
-            name: "Netflix",
-            cost: 15.99,
-            currency: "USD",
-            billingCycle: .monthly,
-            nextPaymentDate: Calendar.current.date(byAdding: .day, value: 12, to: Date()) ?? Date(),
-            category: .streaming,
-            description: "影音串流平台"
-        ),
-        Subscription(
-            name: "Adobe Creative Cloud",
-            cost: 239.88,
-            currency: "USD",
-            billingCycle: .annually,
-            nextPaymentDate: Calendar.current.date(byAdding: .day, value: 45, to: Date()) ?? Date(),
-            category: .productivity,
-            description: "創意軟體套件"
-        ),
-        Subscription(
-            name: "Notion Pro",
-            cost: 96.00,
-            currency: "USD",
-            billingCycle: .annually,
-            nextPaymentDate: Calendar.current.date(byAdding: .day, value: 180, to: Date()) ?? Date(),
-            category: .productivity,
-            description: "生產力與筆記應用"
-        ),
-        Subscription(
-            name: "GitHub Pro",
-            cost: 4.00,
-            currency: "USD",
-            billingCycle: .monthly,
-            nextPaymentDate: Calendar.current.date(byAdding: .day, value: 28, to: Date()) ?? Date(),
-            category: .business,
-            description: "程式碼儲存庫託管"
-        )
-    ]
+    static let sampleData: [Subscription] = []
 }

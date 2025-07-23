@@ -16,6 +16,7 @@ class NotificationManager: ObservableObject {
     private let notificationCenter = UNUserNotificationCenter.current()
     private let userDefaults = UserDefaults.standard
     private let notificationEnabledKey = "isNotificationEnabled"
+    private let localizationManager = LocalizationManager.shared
     
     private init() {
         loadNotificationSettings()
@@ -72,8 +73,9 @@ class NotificationManager: ObservableObject {
         
         // Create notification content
         let content = UNMutableNotificationContent()
-        content.title = "即將扣款提醒"
-        content.body = "\(subscription.name) 將在 2 天後扣款 \(formatCurrency(subscription.cost, currency: subscription.currency))"
+        content.title = localizationManager.localizedString(for: .paymentReminderTitle)
+        let formattedCurrency = formatCurrency(subscription.cost, currency: subscription.currency)
+        content.body = String(format: localizationManager.localizedString(for: .paymentReminderBody), subscription.name, formattedCurrency)
         content.sound = .default
         content.badge = 1
         
@@ -141,11 +143,70 @@ class NotificationManager: ObservableObject {
         }
     }
     
+    func getDetailedNotificationStatus() async -> String {
+        let settings = await notificationCenter.notificationSettings()
+        
+        var statusInfo = ["📱 詳細通知狀態報告"]
+        statusInfo.append("授權狀態: \(settings.authorizationStatus.description)")
+        statusInfo.append("提醒樣式: \(settings.alertSetting.description)")
+        statusInfo.append("聲音: \(settings.soundSetting.description)")
+        statusInfo.append("標記: \(settings.badgeSetting.description)")
+        statusInfo.append("鎖定螢幕: \(settings.lockScreenSetting.description)")
+        statusInfo.append("通知中心: \(settings.notificationCenterSetting.description)")
+        statusInfo.append("橫幅: \(settings.alertStyle.description)")
+        
+        if #available(iOS 15.0, *) {
+            statusInfo.append("定時摘要: \(settings.scheduledDeliverySetting.description)")
+        }
+        
+        return statusInfo.joined(separator: "\n")
+    }
+    
+    func printDetailedNotificationStatus() {
+        Task {
+            let statusInfo = await getDetailedNotificationStatus()
+            print(statusInfo)
+        }
+    }
+    
     func scheduleTestNotification(for subscription: Subscription, delaySeconds: Double = 5.0) {
+        // Check notification permission first
+        notificationCenter.getNotificationSettings { settings in
+            DispatchQueue.main.async {
+                let authorizationStatus = settings.authorizationStatus
+                
+                print("🔔 測試通知權限狀態: \(authorizationStatus.rawValue)")
+                
+                switch authorizationStatus {
+                case .notDetermined:
+                    print("⚠️ 通知權限未決定，請先到設定頁面開啟通知權限")
+                    // Try to request permission automatically
+                    Task {
+                        let granted = await self.requestNotificationPermission()
+                        if granted {
+                            self.scheduleTestNotificationInternal(for: subscription, delaySeconds: delaySeconds)
+                        }
+                    }
+                    return
+                case .denied:
+                    print("❌ 通知權限被拒絕，請到 iOS 設定 -> \(Bundle.main.displayName ?? "Subscriptions") -> 通知 中開啟")
+                    return
+                case .authorized, .provisional, .ephemeral:
+                    print("✅ 通知權限已授權，準備發送測試通知")
+                    self.scheduleTestNotificationInternal(for: subscription, delaySeconds: delaySeconds)
+                @unknown default:
+                    print("❓ 未知的通知權限狀態")
+                    return
+                }
+            }
+        }
+    }
+    
+    private func scheduleTestNotificationInternal(for subscription: Subscription, delaySeconds: Double) {
         // Create test notification content
         let content = UNMutableNotificationContent()
-        content.title = "🛠 測試通知"
-        content.body = "這是 \(subscription.name) 的測試通知，實際會在扣款前 2 天發送。"
+        content.title = localizationManager.localizedString(for: .testNotificationTitle)
+        content.body = String(format: localizationManager.localizedString(for: .testNotificationBody), subscription.name)
         content.sound = .default
         content.badge = 1
         content.categoryIdentifier = "SUBSCRIPTION_REMINDER"
@@ -160,9 +221,10 @@ class NotificationManager: ObservableObject {
         // Schedule notification
         notificationCenter.add(request) { error in
             if let error = error {
-                print("Failed to send test notification: \(error)")
+                print("❌ 測試通知發送失敗: \(error.localizedDescription)")
             } else {
-                print("Test notification scheduled for \(subscription.name) in \(delaySeconds) seconds")
+                print("✅ 測試通知已安排發送，\(delaySeconds) 秒後將收到通知 (\(subscription.name))")
+                print("💡 提示：如果應用程式在前台，通知可能不會彈出。請將應用程式切換到背景或鎖定螢幕來測試。")
             }
         }
     }
@@ -190,13 +252,13 @@ extension NotificationManager {
         // Create actions
         let openAction = UNNotificationAction(
             identifier: "OPEN_APP",
-            title: "開啟應用程式",
+            title: localizationManager.localizedString(for: .openAppAction),
             options: [.foreground]
         )
         
         let dismissAction = UNNotificationAction(
             identifier: "DISMISS",
-            title: "稍後提醒",
+            title: localizationManager.localizedString(for: .remindLaterAction),
             options: []
         )
         
@@ -210,5 +272,51 @@ extension NotificationManager {
         
         // Register category
         notificationCenter.setNotificationCategories([category])
+    }
+}
+
+// MARK: - UNNotificationSettings Extensions
+
+extension UNAuthorizationStatus {
+    var description: String {
+        switch self {
+        case .notDetermined: return "未決定"
+        case .denied: return "已拒絕"
+        case .authorized: return "已授權"
+        case .provisional: return "臨時授權"
+        case .ephemeral: return "臨時應用授權"
+        @unknown default: return "未知狀態"
+        }
+    }
+}
+
+extension UNNotificationSetting {
+    var description: String {
+        switch self {
+        case .enabled: return "已啟用"
+        case .disabled: return "已停用"
+        case .notSupported: return "不支援"
+        @unknown default: return "未知"
+        }
+    }
+}
+
+extension UNAlertStyle {
+    var description: String {
+        switch self {
+        case .none: return "無"
+        case .banner: return "橫幅"
+        case .alert: return "警示"
+        @unknown default: return "未知"
+        }
+    }
+}
+
+// MARK: - Bundle Extension
+
+extension Bundle {
+    var displayName: String? {
+        return object(forInfoDictionaryKey: "CFBundleDisplayName") as? String ??
+               object(forInfoDictionaryKey: "CFBundleName") as? String
     }
 }

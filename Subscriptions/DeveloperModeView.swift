@@ -152,15 +152,59 @@ struct DeveloperModeView: View {
                                     .foregroundColor(notificationManager.isNotificationEnabled ? .green : .red)
                             }
                             
-                            Button("查看待發送通知") {
-                                notificationManager.printPendingNotifications()
+                            if !notificationManager.isNotificationEnabled {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("📋 測試通知故障排除：")
+                                        .font(.system(size: 14, weight: .semibold))
+                                        .foregroundColor(appColors.primaryText)
+                                    
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text("1. 確認已在設定頁面開啟通知權限")
+                                        Text("2. 檢查 iOS 設定 → Subscriptions → 通知")
+                                        Text("3. 測試時請將應用程式切換到背景")
+                                        Text("4. 在模擬器上通知功能可能受限")
+                                    }
+                                    .font(.system(size: 12))
+                                    .foregroundColor(appColors.secondaryText)
+                                }
+                                .padding(12)
+                                .background(appColors.secondaryBackground)
+                                .cornerRadius(8)
                             }
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(appColors.accent)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 8)
-                            .background(appColors.secondaryBackground)
-                            .cornerRadius(8)
+                            
+                            HStack(spacing: 8) {
+                                Button("查看待發送通知") {
+                                    notificationManager.printPendingNotifications()
+                                }
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(appColors.accent)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 8)
+                                .background(appColors.secondaryBackground)
+                                .cornerRadius(8)
+                                
+                                Button("詳細狀態") {
+                                    notificationManager.printDetailedNotificationStatus()
+                                }
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(appColors.accent)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 8)
+                                .background(appColors.secondaryBackground)
+                                .cornerRadius(8)
+                            }
+                            
+                            if notificationManager.isNotificationEnabled {
+                                Button("重新檢查權限狀態") {
+                                    notificationManager.checkNotificationStatus()
+                                }
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(.blue)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 8)
+                                .background(appColors.secondaryBackground)
+                                .cornerRadius(8)
+                            }
                         }
                         .padding(16)
                         .background(appColors.cardBackground)
@@ -240,6 +284,10 @@ struct DeveloperModeView: View {
     
     private func sendTestNotification(for subscription: Subscription) {
         notificationManager.scheduleTestNotification(for: subscription, delaySeconds: 1.0)
+        
+        // Show user feedback
+        let hapticFeedback = UIImpactFeedbackGenerator(style: .medium)
+        hapticFeedback.impactOccurred()
     }
 }
 
